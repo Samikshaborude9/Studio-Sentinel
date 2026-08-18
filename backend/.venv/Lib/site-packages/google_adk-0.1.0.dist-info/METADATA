@@ -1,0 +1,160 @@
+Metadata-Version: 2.4
+Name: google-adk
+Version: 0.1.0
+Summary: Agent Development Kit
+Author-email: Google LLC <googleapis-packages@google.com>
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Classifier: Typing :: Typed
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: License :: OSI Approved :: Apache Software License
+License-File: LICENSE
+Requires-Dist: authlib>=1.5.1
+Requires-Dist: click>=8.1.8
+Requires-Dist: fastapi>=0.115.0
+Requires-Dist: google-api-python-client>=2.157.0
+Requires-Dist: google-cloud-aiplatform>=1.87.0
+Requires-Dist: google-cloud-secret-manager>=2.22.0
+Requires-Dist: google-cloud-speech>=2.30.0
+Requires-Dist: google-cloud-storage>=2.18.0, <3.0.0
+Requires-Dist: google-genai>=1.9.0
+Requires-Dist: graphviz>=0.20.2
+Requires-Dist: mcp>=1.5.0;python_version>='3.10'
+Requires-Dist: opentelemetry-api>=1.31.0
+Requires-Dist: opentelemetry-exporter-gcp-trace>=1.9.0
+Requires-Dist: opentelemetry-sdk>=1.31.0
+Requires-Dist: pydantic>=2.0, <3.0.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: PyYAML>=6.0.2
+Requires-Dist: sqlalchemy>=2.0
+Requires-Dist: tzlocal>=5.3
+Requires-Dist: uvicorn>=0.34.0
+Requires-Dist: flit>=3.10.0 ; extra == "dev"
+Requires-Dist: isort>=6.0.0 ; extra == "dev"
+Requires-Dist: pyink>=24.10.0 ; extra == "dev"
+Requires-Dist: pylint>=2.6.0 ; extra == "dev"
+Requires-Dist: autodoc_pydantic ; extra == "docs"
+Requires-Dist: furo ; extra == "docs"
+Requires-Dist: myst-parser ; extra == "docs"
+Requires-Dist: sphinx ; extra == "docs"
+Requires-Dist: sphinx-autodoc-typehints ; extra == "docs"
+Requires-Dist: sphinx-rtd-theme ; extra == "docs"
+Requires-Dist: google-cloud-aiplatform[evaluation]>=1.87.0 ; extra == "eval"
+Requires-Dist: pandas>=2.2.3 ; extra == "eval"
+Requires-Dist: tabulate>=0.9.0 ; extra == "eval"
+Requires-Dist: anthropic>=0.43.0 ; extra == "extensions"
+Requires-Dist: beautifulsoup4>=3.2.2 ; extra == "extensions"
+Requires-Dist: crewai[tools] ; extra == "extensions" and (python_version>='3.10')
+Requires-Dist: docker>=7.0.0 ; extra == "extensions"
+Requires-Dist: langgraph>=0.2.60 ; extra == "extensions"
+Requires-Dist: litellm>=1.63.11 ; extra == "extensions"
+Requires-Dist: llama-index-readers-file>=0.4.0 ; extra == "extensions"
+Requires-Dist: lxml>=5.3.0 ; extra == "extensions"
+Requires-Dist: langchain-community>=0.3.17 ; extra == "test"
+Requires-Dist: pytest-asyncio>=0.25.0 ; extra == "test"
+Requires-Dist: pytest-mock>=3.14.0 ; extra == "test"
+Requires-Dist: pytest-xdist>=3.6.1 ; extra == "test"
+Requires-Dist: pytest>=8.3.4 ; extra == "test"
+Project-URL: changelog, https://github.com/google/adk-python/blob/main/CHANGELOG.md
+Project-URL: documentation, https://google.github.io/adk-docs/
+Project-URL: homepage, https://google.github.io/adk-docs/
+Project-URL: repository, https://github.com/google/adk-python
+Provides-Extra: dev
+Provides-Extra: docs
+Provides-Extra: eval
+Provides-Extra: extensions
+Provides-Extra: test
+
+# Agent Development Kit (ADK)
+
+An open-source, code-first Python toolkit for building, evaluating, and deploying sophisticated AI agents with flexibility and control.
+
+The Agent Development Kit (ADK) is designed for developers seeking fine-grained control and flexibility when building advanced AI agents that are tightly integrated with services in Google Cloud. It allows you to define agent behavior, orchestration, and tool use directly in code, enabling robust debugging, versioning, and deployment anywhere – from your laptop to the cloud.
+
+---
+
+## ✨ Key Features
+
+* **Code-First Development:** Define agents, tools, and orchestration logic for maximum control, testability, and versioning.
+* **Multi-Agent Architecture:** Build modular and scalable applications by composing multiple specialized agents in flexible hierarchies.
+* **Rich Tool Ecosystem:** Equip agents with diverse capabilities using pre-built tools, custom Python functions, API specifications, or integrating existing tools.
+* **Flexible Orchestration:** Define workflows using built-in agents for predictable pipelines, or leverage LLM-driven dynamic routing for adaptive behavior.
+* **Integrated Developer Experience:** Develop, test, and debug locally with a CLI and visual web UI.
+* **Built-in Evaluation:** Measure agent performance by evaluating response quality and step-by-step execution trajectory.
+* **Deployment Ready:** Containerize and deploy your agents anywhere – scale with Vertex AI Agent Engine, Cloud Run, or Docker.
+* **Native Streaming Support:** Build real-time, interactive experiences with native support for bidirectional streaming (text and audio).
+* **State, Memory & Artifacts:** Manage short-term conversational context, configure long-term memory, and handle file uploads/downloads.
+* **Extensibility:** Customize agent behavior deeply with callbacks and easily integrate third-party tools and services.
+
+## 🚀 Installation
+
+You can install the ADK using `pip`:
+
+```bash
+pip install google-adk
+```
+
+## 🏁 Getting Started
+
+Create your first agent (`my_agent/agent.py`):
+
+```python
+# my_agent/agent.py
+from google.adk.agents import Agent
+from google.adk.tools import google_search
+
+root_agent = Agent(
+    name="search_assistant",
+    model="gemini-2.0-flash-exp", # Or your preferred Gemini model
+    instruction="You are a helpful assistant. Answer user questions using Google Search when needed.",
+    description="An assistant that can search the web.",
+    tools=[google_search]
+)
+```
+
+Create `my_agent/__init__.py`:
+
+```python
+# my_agent/__init__.py
+from . import agent
+```
+
+Run it via the CLI (from the directory *containing* `my_agent`):
+
+```bash
+adk run my_agent
+```
+
+Or launch the Web UI from the folder that contains `my_agent` folder:
+
+```bash
+adk web
+```
+
+For a full step-by-step guide, check out the [quickstart](https://google.github.io/adk-docs/get-started/quickstart/) or [sample agents](https://github.com/google/adk-samples).
+
+## 📚 Resources
+
+Explore the full documentation for detailed guides on building, evaluating, and deploying agents:
+
+*   **[Get Started](https://google.github.io/adk-docs/get-started/)**
+*   **[Browse Sample Agents](https://github.com/google/adk-samples)**
+*   **[Evaluate Agents](https://google.github.io/adk-docs/guides/evaluate-agents/)**
+*   **[Deploy Agents](https://google.github.io/adk-docs/deploy/)**
+*   **[API Reference](https://google.github.io/adk-docs/api-reference/)**
+*   **[Troubleshooting](https://google.github.io/adk-docs/guides/troubleshooting/)**
+
+---
+
+*Happy Agent Building!*
+
