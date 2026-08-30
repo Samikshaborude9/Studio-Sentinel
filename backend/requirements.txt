@@ -4,5 +4,6 @@ pydantic==2.9.2
 sqlmodel==0.0.22
 requests==2.32.3
 python-dotenv==1.0.1
+psycopg[binary]==3.3.4
 google-adk==0.1.0
 google-genai>=1.9.0
