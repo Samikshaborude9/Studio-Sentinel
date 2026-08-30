@@ -4,8 +4,12 @@
                                                     \\-> (reject) -> REJECTED
 
 The approval pause is modeled here in application code, not left to the LLM to
-"decide to wait" — state is persisted per-incident in SQLite via SQLModel.
+"decide to wait" — state is persisted per-incident in a database via SQLModel.
+The default remains SQLite for local development, but a Supabase/Postgres URL can be
+provided through the DATABASE_URL environment variable.
 """
+import os
+
 from sqlmodel import SQLModel, Session, create_engine, select
 
 from .models import Incident
@@ -16,7 +20,18 @@ from ..schemas.findings import IncidentFindings
 from ..schemas.recommendation import Recommendation
 from ..schemas.report import IncidentReport
 
-engine = create_engine("sqlite:///./incidents.db", connect_args={"check_same_thread": False})
+
+def _build_engine():
+    database_url = os.getenv("DATABASE_URL", "sqlite:///./incidents.db")
+    if database_url.startswith("postgresql://"):
+        # Use psycopg 3 driver for Supabase/Postgres connections.
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    if database_url.startswith("postgresql+psycopg://") or database_url.startswith("postgres://"):
+        return create_engine(database_url, pool_pre_ping=True)
+    return create_engine(database_url, connect_args={"check_same_thread": False})
+
+
+engine = _build_engine()
 
 
 def init_db():
