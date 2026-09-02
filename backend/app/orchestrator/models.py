@@ -1,14 +1,24 @@
 import uuid
 from datetime import datetime
-from typing import Literal, Optional
+from enum import Enum
+from typing import Optional
 from sqlmodel import SQLModel, Field
 
 
-ServiceName = Literal["ingest", "transcode", "render", "distribution"]
-IncidentState = Literal[
-    "DETECTED", "INVESTIGATING", "AWAITING_APPROVAL",
-    "REMEDIATING", "RESOLVED", "REJECTED",
-]
+class ServiceName(str, Enum):
+    INGEST = "ingest"
+    TRANSCODE = "transcode"
+    RENDER = "render"
+    DISTRIBUTION = "distribution"
+
+
+class IncidentState(str, Enum):
+    DETECTED = "DETECTED"
+    INVESTIGATING = "INVESTIGATING"
+    AWAITING_APPROVAL = "AWAITING_APPROVAL"
+    REMEDIATING = "REMEDIATING"
+    RESOLVED = "RESOLVED"
+    REJECTED = "REJECTED"
 
 
 def new_id() -> str:
