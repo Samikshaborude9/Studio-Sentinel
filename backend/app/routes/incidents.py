@@ -1,14 +1,19 @@
 import json
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ..orchestrator import state_machine as sm
+from ..orchestrator.models import ServiceName
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
 
 class CreateIncidentRequest(BaseModel):
-    service: str
+    service: ServiceName
+
+
+class ApproveIncidentRequest(BaseModel):
+    option_index: int = Field(default=0, ge=0)
 
 
 def _serialize(incident) -> dict:
@@ -45,8 +50,11 @@ def get_incident(incident_id: str):
 
 
 @router.post("/{incident_id}/approve")
-def approve_incident(incident_id: str):
-    incident = sm.approve_incident(incident_id)
+def approve_incident(incident_id: str, req: ApproveIncidentRequest | None = None):
+    try:
+        incident = sm.approve_incident(incident_id, req.option_index if req else 0)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if incident is None:
         raise HTTPException(status_code=404, detail="incident not found")
     return _serialize(incident)
