@@ -1,7 +1,14 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 from sqlmodel import SQLModel, Field
+
+
+ServiceName = Literal["ingest", "transcode", "render", "distribution"]
+IncidentState = Literal[
+    "DETECTED", "INVESTIGATING", "AWAITING_APPROVAL",
+    "REMEDIATING", "RESOLVED", "REJECTED",
+]
 
 
 def new_id() -> str:
@@ -10,8 +17,8 @@ def new_id() -> str:
 
 class Incident(SQLModel, table=True):
     id: str = Field(default_factory=new_id, primary_key=True)
-    service: str
-    state: str = "DETECTED"  # DETECTED -> INVESTIGATING -> AWAITING_APPROVAL -> REMEDIATING -> RESOLVED | REJECTED
+    service: ServiceName
+    state: IncidentState = "DETECTED"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
