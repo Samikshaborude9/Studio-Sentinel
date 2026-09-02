@@ -73,12 +73,18 @@ export async function listIncidents(): Promise<Incident[]> {
   return res.json();
 }
 
-export async function approveIncident(id: string): Promise<Incident> {
-  const res = await fetch(`${BASE}/incidents/${id}/approve`, { method: "POST" });
+export async function approveIncident(id: string, optionIndex = 0): Promise<Incident> {
+  const res = await fetch(`${BASE}/incidents/${id}/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ option_index: optionIndex }),
+  });
+  if (!res.ok) throw new Error("failed to approve incident");
   return res.json();
 }
 
 export async function rejectIncident(id: string): Promise<Incident> {
   const res = await fetch(`${BASE}/incidents/${id}/reject`, { method: "POST" });
+  if (!res.ok) throw new Error("failed to reject incident");
   return res.json();
 }

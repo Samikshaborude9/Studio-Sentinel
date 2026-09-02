@@ -15,7 +15,9 @@ export default function IncidentDetail() {
   const params = useParams();
   const id = params.id as string;
   const [incident, setIncident] = useState<Incident | null>(null);
+  const [selectedOption, setSelectedOption] = useState(0);
   const [acting, setActing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -39,14 +41,28 @@ export default function IncidentDetail() {
 
   async function handleApprove() {
     setActing(true);
-    await approveIncident(id);
-    setActing(false);
+    setActionError(null);
+    try {
+      const updated = await approveIncident(id, selectedOption);
+      setIncident(updated);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "approval failed");
+    } finally {
+      setActing(false);
+    }
   }
 
   async function handleReject() {
     setActing(true);
-    await rejectIncident(id);
-    setActing(false);
+    setActionError(null);
+    try {
+      const updated = await rejectIncident(id);
+      setIncident(updated);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "rejection failed");
+    } finally {
+      setActing(false);
+    }
   }
 
   return (
@@ -67,6 +83,12 @@ export default function IncidentDetail() {
       {incident.error && (
         <div className="mb-6 border border-crit/40 bg-crit/5 rounded-sm px-4 py-3 font-mono text-xs text-crit">
           {incident.error}
+        </div>
+      )}
+
+      {actionError && (
+        <div className="mb-6 border border-crit/40 bg-crit/5 rounded-sm px-4 py-3 font-mono text-xs text-crit">
+          {actionError}
         </div>
       )}
 
@@ -105,9 +127,14 @@ export default function IncidentDetail() {
 
           <div className="space-y-2 mb-4">
             {incident.recommendation.options.map((opt, i) => (
-              <div
+              <button
                 key={i}
-                className="flex items-center justify-between border border-panelLine rounded-sm px-3 py-2"
+                type="button"
+                onClick={() => setSelectedOption(i)}
+                aria-pressed={selectedOption === i}
+                className={`flex w-full items-center justify-between border rounded-sm px-3 py-2 text-left ${
+                  selectedOption === i ? "border-signal" : "border-panelLine"
+                }`}
               >
                 <span className="text-sm text-ink">{opt.action}</span>
                 <div className="flex items-center gap-3 font-mono text-[11px]">
@@ -116,7 +143,7 @@ export default function IncidentDetail() {
                   </span>
                   <span className="text-inkDim">~{opt.expected_recovery_min}m</span>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
 
