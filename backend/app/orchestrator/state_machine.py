@@ -12,7 +12,7 @@ import os
 
 from sqlmodel import SQLModel, Session, create_engine, select
 
-from .models import Incident
+from .models import Incident, ServiceName
 from ..agents.investigator import investigate
 from ..agents.advisor import advise
 from ..agents.executor import execute
@@ -38,7 +38,7 @@ def init_db():
     SQLModel.metadata.create_all(engine)
 
 
-def create_incident(service: str) -> Incident:
+def create_incident(service: ServiceName) -> Incident:
     """DETECTED -> INVESTIGATING -> AWAITING_APPROVAL, all in one call (matches
     POST /incidents in the API spec: it triggers detection through to the advisor's
     recommendation in a single request)."""
@@ -76,19 +76,22 @@ def list_incidents() -> list[Incident]:
         return list(session.exec(select(Incident).order_by(Incident.created_at.desc())))
 
 
-def approve_incident(incident_id: str) -> Incident | None:
+def approve_incident(incident_id: str, option_index: int = 0) -> Incident | None:
     with Session(engine) as session:
         incident = session.get(Incident, incident_id)
         if incident is None or incident.state != "AWAITING_APPROVAL":
             return incident
+
+        recommendation = Recommendation.model_validate_json(incident.recommendation_json)
+        if option_index >= len(recommendation.options):
+            raise ValueError("invalid remediation option")
 
         incident.state = "REMEDIATING"
         session.add(incident)
         session.commit()
 
         try:
-            recommendation = Recommendation.model_validate_json(incident.recommendation_json)
-            report = execute(incident.id, incident.service, recommendation)
+            report = execute(incident.id, incident.service, recommendation, option_index)
             incident.report_json = report.model_dump_json()
             incident.state = "RESOLVED"
         except Exception as e:  # noqa: BLE001
@@ -106,6 +109,8 @@ def reject_incident(incident_id: str) -> Incident | None:
         incident = session.get(Incident, incident_id)
         if incident is None:
             return None
+        if incident.state != "AWAITING_APPROVAL":
+            return incident
         incident.state = "REJECTED"
         session.add(incident)
         session.commit()
