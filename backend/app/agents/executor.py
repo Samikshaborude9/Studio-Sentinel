@@ -11,6 +11,8 @@ from ..tools.rollback import rollback_service
 from ..tools.direct_grafana import fetch_service_status
 
 DIRECT_MODE = os.getenv("DIRECT_MODE", "true").lower() == "true"
+RECOVERY_TIMEOUT_SEC = float(os.getenv("RECOVERY_TIMEOUT_SEC", "30"))
+RECOVERY_POLL_INTERVAL_SEC = float(os.getenv("RECOVERY_POLL_INTERVAL_SEC", "1"))
 
 
 def execute(incident_id: str, service: str, recommendation: Recommendation, option_index: int = 0) -> IncidentReport:
@@ -22,8 +24,7 @@ def execute(incident_id: str, service: str, recommendation: Recommendation, opti
 def _execute_direct(incident_id: str, service: str, recommendation: Recommendation, option_index: int) -> IncidentReport:
     start = time.time()
     rollback_service(service)
-    time.sleep(1)  # let generator's next tick reflect the cleared failure
-    status = fetch_service_status(service)
+    status = _wait_for_recovery(service, start)
     recovery_time = round(time.time() - start, 1)
 
     jobs_recovered = max(1, int(status.get("queue_depth", 0)))
@@ -37,6 +38,16 @@ def _execute_direct(incident_id: str, service: str, recommendation: Recommendati
         jobs_recovered=jobs_recovered,
         delay_avoided_estimate=delay_avoided,
     )
+
+
+def _wait_for_recovery(service: str, start: float) -> dict:
+    while True:
+        status = fetch_service_status(service)
+        if not status.get("failing", True):
+            return status
+        if time.time() - start >= RECOVERY_TIMEOUT_SEC:
+            raise TimeoutError(f"service {service} did not recover within {RECOVERY_TIMEOUT_SEC:g}s")
+        time.sleep(RECOVERY_POLL_INTERVAL_SEC)
 
 
 def _execute_via_llm(incident_id: str, service: str, recommendation: Recommendation, option_index: int) -> IncidentReport:
