@@ -36,3 +36,16 @@ def productions():
 def trigger_failure(service: str):
     resp = requests.post(f"{GENERATOR_URL}/inject-failure", params={"service": service}, timeout=10)
     return resp.json()
+
+
+@app.get("/scenarios")
+def get_scenarios():
+    resp = requests.get(f"{GENERATOR_URL}/scenarios", timeout=10)
+    return resp.json()
+
+
+@app.post("/inject-scenario")
+def inject_scenario_proxy(scenario_id: str):
+    resp = requests.post(f"{GENERATOR_URL}/inject-scenario", params={"scenario_id": scenario_id}, timeout=10)
+    return resp.json()
+

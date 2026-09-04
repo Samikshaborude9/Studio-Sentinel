@@ -55,7 +55,11 @@ def create_incident(service: ServiceName) -> Incident:
             recommendation = advise(findings)
             incident.recommendation_json = recommendation.model_dump_json()
 
-            incident.state = "AWAITING_APPROVAL"
+            if recommendation.options:
+                incident.state = "AWAITING_APPROVAL"
+            else:
+                incident.state = "REJECTED"
+                incident.error = "No active anomaly detected; remediation was not offered."
         except Exception as e:  # noqa: BLE001
             incident.state = "DETECTED"
             incident.error = str(e)
