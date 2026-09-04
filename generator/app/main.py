@@ -80,6 +80,42 @@ def clear_failure(service: str = "render"):
     return {"service": service, "failing": False}
 
 
+@app.post("/restart")
+def restart(service: str = "render"):
+    if service not in STATE:
+        return Response(status_code=404, content=f"unknown service {service}")
+    STATE[service].failing = False
+    STATE[service].queue_history.clear()
+    return {"service": service, "restarted": True, "failing": False}
+
+
 @app.get("/services")
 def list_services():
     return {"services": SERVICES}
+
+
+@app.get("/scenarios")
+def list_scenarios():
+    from .services import FAILURE_PROFILE
+    return {
+        "scenarios": [
+            {
+                "id": profile["scenario_id"],
+                "service": svc,
+                "title": profile["scenario_title"],
+                "narrative": profile["narrative"],
+            }
+            for svc, profile in FAILURE_PROFILE.items()
+        ]
+    }
+
+
+@app.post("/inject-scenario")
+def inject_scenario(scenario_id: str):
+    from .services import FAILURE_PROFILE
+    for svc, profile in FAILURE_PROFILE.items():
+        if profile.get("scenario_id") == scenario_id:
+            STATE[svc].failing = True
+            return {"service": svc, "scenario_id": scenario_id, "failing": True}
+    return Response(status_code=404, content=f"unknown scenario {scenario_id}")
+

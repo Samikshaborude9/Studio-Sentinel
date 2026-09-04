@@ -11,28 +11,62 @@ BASELINE = {
     "distribution": {"error_rate_pct": (0.0, 0.3), "latency_p95_ms": (50, 120),  "gpu_util_pct": (0, 0),   "queue_depth": (0, 3)},
 }
 
-# The one built end-to-end demo failure: a bad `renderer v4.2` deploy.
+# Built Hollywood Studio Failure Scenarios
 FAILURE_PROFILE = {
     "render": {
-        "error_rate_pct": (15.0, 35.0),
-        "latency_p95_ms": (4000, 9000),
-        "gpu_util_pct": (92, 99),
-        "queue_depth": (40, 120),
+        "scenario_id": "render_oom",
+        "scenario_title": "VFX Render Farm CUDA OOM",
+        "narrative": "Shader deploy v4.2 causes GPU VRAM exhaustion on 8K composite batches, threatening daily review cut.",
+        "error_rate_pct": (18.0, 38.0),
+        "latency_p95_ms": (4500, 9200),
+        "gpu_util_pct": (93, 99),
+        "queue_depth": (45, 130),
         "log_lines": [
-            "ERROR renderer[v4.2]: CUDA out of memory. Tried to allocate 2.14 GiB",
-            "ERROR renderer[v4.2]: shot batch failed after 3 retries, worker OOM-killed",
+            "ERROR renderer[v4.2]: CUDA out of memory. Tried to allocate 2.14 GiB on device:0",
+            "ERROR renderer[v4.2]: shot batch 'dune_seq04_fx' failed after 3 retries, worker OOM-killed",
             "WARN  renderer[v4.2]: GPU memory fragmentation detected, falling back to CPU (slow path)",
-            "ERROR renderer[v4.2]: CUDA out of memory. Tried to allocate 1.87 GiB",
+            "ERROR renderer[v4.2]: CUDA out of memory. Tried to allocate 1.87 GiB on device:1",
         ],
-    }
+    },
+    "ingest": {
+        "scenario_id": "ingest_corrupt",
+        "scenario_title": "Dailies Ingest Checksum Failure",
+        "narrative": "High-speed camera card reader corrupts ARRI RAW ingest buffer, blocking editor proxy generation.",
+        "error_rate_pct": (16.0, 30.0),
+        "latency_p95_ms": (2400, 4800),
+        "gpu_util_pct": (0, 8),
+        "queue_depth": (35, 90),
+        "log_lines": [
+            "ERROR ingest[camera-daemon]: ARRI RAW MD5 checksum mismatch on reel A088_C004_0904_RAW",
+            "ERROR ingest[camera-daemon]: Ingest buffer packet dropped at frame #84102, re-read failed",
+            "WARN  ingest[camera-daemon]: Storage array I/O queue backed up, NVMe write latency >450ms",
+            "ERROR ingest[camera-daemon]: Stream validation aborted: hash check failed 3 consecutive times",
+        ],
+    },
+    "distribution": {
+        "scenario_id": "dist_timeout",
+        "scenario_title": "Master DCP Distribution CDN Timeout",
+        "narrative": "Global theatrical release DCP package push throttled by CDN edge timeouts, risking worldwide delivery window.",
+        "error_rate_pct": (22.0, 42.0),
+        "latency_p95_ms": (6000, 11500),
+        "gpu_util_pct": (0, 0),
+        "queue_depth": (28, 80),
+        "log_lines": [
+            "ERROR distribution[cdn-edge]: 504 Gateway Timeout pushing encrypted DCP chunk #4019 to region ap-south",
+            "ERROR distribution[cdn-edge]: CDN edge bandwidth saturated; origin fallback rejected with 429",
+            "WARN  distribution[cdn-edge]: Cache miss cascade on master exhibition playlist stream",
+            "ERROR distribution[cdn-edge]: Package QC hash verification socket timed out after 60000ms",
+        ],
+    },
 }
 
 NORMAL_LOG_LINES = {
-    "ingest": ["INFO ingest: batch uploaded ok", "INFO ingest: checksum verified"],
-    "transcode": ["INFO transcode: job completed", "INFO transcode: queued 4 jobs"],
-    "render": ["INFO renderer[v4.2]: shot rendered ok, 340 frames", "INFO renderer[v4.2]: queue drained"],
-    "distribution": ["INFO distribution: delivered to region us-east", "INFO distribution: cache warm"],
+    "ingest": ["INFO ingest: batch reel B012 uploaded ok", "INFO ingest: ARRI checksum verified 100%"],
+    "transcode": ["INFO transcode: ProRes 422 proxy generated", "INFO transcode: ACES color pass complete"],
+    "render": ["INFO renderer[v4.1.9]: shot 412 rendered nominal, 340 frames", "INFO renderer: GPU VRAM optimal 48%"],
+    "distribution": ["INFO distribution: DCP master delivered to region us-east", "INFO distribution: CDN cache 99.4% warm"],
 }
+
 
 
 @dataclass
