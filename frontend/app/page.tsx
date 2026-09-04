@@ -1,11 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getProductions, injectFailure, createIncident, ServiceStatus } from "@/lib/api";
-import ProductionTile from "@/components/ProductionTile";
+import Link from "next/link";
+import {
+  getProductions,
+  createIncident,
+  injectScenario,
+  ServiceStatus,
+  Scenario,
+} from "@/lib/api";
+import PipelineTopology from "@/components/PipelineTopology";
+import ScenarioPanel from "@/components/ScenarioPanel";
+import TelemetryChart from "@/components/TelemetryChart";
 
 export default function Dashboard() {
   const [statuses, setStatuses] = useState<Record<string, ServiceStatus> | null>(null);
+  const [selectedService, setSelectedService] = useState<string>("render");
   const [busy, setBusy] = useState(false);
   const router = useRouter();
 
@@ -16,64 +26,111 @@ export default function Dashboard() {
         const data = await getProductions();
         if (alive) setStatuses(data);
       } catch {
-        // generator/backend not reachable yet — keep the board blank rather than crash
+        // Backend connecting
       }
     }
     poll();
-    const t = setInterval(poll, 3000);
+    const t = setInterval(poll, 2500);
     return () => {
       alive = false;
       clearInterval(t);
     };
   }, []);
 
-  async function handleInject() {
+  async function handleTriggerScenario(scenario: Scenario) {
     setBusy(true);
-    await injectFailure("render");
-    setBusy(false);
+    try {
+      await injectScenario(scenario.id);
+      // Wait a moment for generator to emit failing metrics
+      await new Promise((r) => setTimeout(r, 600));
+      const incident = await createIncident(scenario.service);
+      router.push(`/incidents/${incident.id}`);
+    } catch (err) {
+      console.error("Scenario injection error:", err);
+      setBusy(false);
+    }
   }
 
-  async function handleWatch(service: string) {
+  async function handleManualInspect(service: string) {
     setBusy(true);
-    const incident = await createIncident(service);
-    router.push(`/incidents/${incident.id}`);
+    try {
+      const incident = await createIncident(service);
+      router.push(`/incidents/${incident.id}`);
+    } catch (err) {
+      console.error("Manual inspection error:", err);
+      setBusy(false);
+    }
   }
 
   return (
-    <div>
-      <div className="flex items-end justify-between mb-8">
+    <div className="space-y-6">
+      {/* Top Banner / Hero Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4 pb-6 border-b border-panelLine">
         <div>
-          <h1 className="font-mono text-sm tracking-[0.3em] text-inkDim mb-1">
-            THREE PRODUCTIONS ONLINE
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="font-mono text-[11px] px-2.5 py-0.5 rounded bg-signal/20 text-signal border border-signal/40 font-semibold tracking-widest uppercase">
+              STUDIO SENTINEL v2.0
+            </span>
+            <span className="font-mono text-[11px] px-2.5 py-0.5 rounded bg-ok/15 text-ok border border-ok/30 font-semibold tracking-wider uppercase flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-ok animate-pulse" />
+              GRAFANA CLOUD + GEMINI AGENTS ONLINE
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-ink font-display">
+            Autonomous Hollywood Production Control Room
           </h1>
-          <p className="text-inkDim text-sm max-w-lg">
-            Watching ingest, transcode, render, and distribution across the pipeline.
-            Sentinel escalates anything that puts a delivery window at risk.
+          <p className="text-sm text-inkDim max-w-2xl mt-1 leading-relaxed">
+            Multi-agent systems guarding high-stakes digital cinema workflows: Ingest, Transcoding,
+            VFX Render Farm, and Worldwide DCP Distribution. Powered by Gemini Enterprise, Google ADK,
+            and Grafana Cloud MCP.
           </p>
         </div>
-        <button
-          onClick={handleInject}
-          disabled={busy}
-          className="font-mono text-xs tracking-widest border border-panelLine text-inkDim px-4 py-2 rounded-sm hover:border-signal hover:text-signal transition-colors disabled:opacity-40"
-        >
-          INJECT DEMO FAILURE
-        </button>
+
+        <div className="flex items-center gap-3">
+          <Link
+            href="/incidents"
+            className="font-mono text-xs tracking-widest border border-panelLine bg-panel text-ink hover:border-signal hover:text-signal px-4 py-2.5 rounded transition-colors"
+          >
+            VIEW INCIDENT LOG →
+          </Link>
+        </div>
       </div>
 
-      {!statuses ? (
-        <div className="font-mono text-xs text-inkDim">connecting to control room…</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Object.values(statuses).map((s) => (
-            <ProductionTile key={s.service} status={s} onWatch={() => handleWatch(s.service)} />
+      {/* Pipeline Visualizer (Interactive 4-Stage Topology) */}
+      <PipelineTopology
+        statuses={statuses}
+        onSelectService={(svc) => setSelectedService(svc)}
+        activeService={selectedService}
+      />
+
+      {/* Scenario Injection Controller (3 Hollywood Disaster Modes) */}
+      <ScenarioPanel onTriggerScenario={handleTriggerScenario} busy={busy} />
+
+      {/* Real-time Telemetry Graph */}
+      <TelemetryChart statuses={statuses} selectedService={selectedService} />
+
+      {/* Quick Stage Inspection Footer */}
+      <div className="border border-panelLine bg-panel/40 rounded-lg p-5 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 className="font-mono text-xs uppercase tracking-wider text-ink font-semibold">
+            Manual Stage Anomaly Escalation
+          </h3>
+          <p className="text-xs text-inkDim mt-0.5">
+            Trigger an ad-hoc deep inspection on any pipeline node without waiting for auto-thresholds.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {["ingest", "transcode", "render", "distribution"].map((svc) => (
+            <button
+              key={svc}
+              onClick={() => handleManualInspect(svc)}
+              disabled={busy}
+              className="font-mono text-[11px] uppercase tracking-wider border border-panelLine bg-board px-3 py-1.5 rounded hover:border-signal hover:text-signal transition-colors disabled:opacity-40"
+            >
+              Analyze {svc}
+            </button>
           ))}
         </div>
-      )}
-
-      <div className="mt-10 border-t border-panelLine pt-4">
-        <a href="/incidents" className="font-mono text-xs text-inkDim hover:text-signal tracking-widest">
-          VIEW INCIDENT LOG →
-        </a>
       </div>
     </div>
   );

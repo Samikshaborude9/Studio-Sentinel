@@ -11,34 +11,48 @@ export type ServiceStatus = {
   failing: boolean;
 };
 
+export type IncidentFindings = {
+  error_rate_pct: number;
+  latency_p95_ms: number;
+  gpu_util_pct: number;
+  sample_log_lines: string[];
+  anomaly_summary: string;
+};
+
+export type RemediationOption = {
+  action_id: "rollback_service" | "restart_service";
+  action: string;
+  risk_level: "low" | "medium" | "high";
+  expected_recovery_min: number;
+};
+
+export type Recommendation = {
+  root_cause: string;
+  confidence_pct: number;
+  options: RemediationOption[];
+  impact_if_ignored: string;
+  impact_if_acted: string;
+};
+
+export type IncidentReport = {
+  action_taken: string;
+  recovery_time_sec: number;
+  jobs_recovered: number;
+  delay_avoided_estimate: string;
+};
+
 export type Incident = {
   id: string;
   service: string;
   state: "DETECTED" | "INVESTIGATING" | "AWAITING_APPROVAL" | "REMEDIATING" | "RESOLVED" | "REJECTED";
   created_at: string;
   updated_at: string;
-  findings: {
-    error_rate_pct: number;
-    latency_p95_ms: number;
-    gpu_util_pct: number;
-    sample_log_lines: string[];
-    anomaly_summary: string;
-  } | null;
-  recommendation: {
-    root_cause: string;
-    confidence_pct: number;
-    options: { action: string; risk_level: "low" | "medium" | "high"; expected_recovery_min: number }[];
-    impact_if_ignored: string;
-    impact_if_acted: string;
-  } | null;
-  report: {
-    action_taken: string;
-    recovery_time_sec: number;
-    jobs_recovered: number;
-    delay_avoided_estimate: string;
-  } | null;
+  findings: IncidentFindings | null;
+  recommendation: Recommendation | null;
+  report: IncidentReport | null;
   error: string | null;
 };
+
 
 export async function getProductions(): Promise<Record<string, ServiceStatus>> {
   const res = await fetch(`${BASE}/productions`, { cache: "no-store" });
@@ -88,3 +102,24 @@ export async function rejectIncident(id: string): Promise<Incident> {
   if (!res.ok) throw new Error("failed to reject incident");
   return res.json();
 }
+
+export type Scenario = {
+
+  id: string;
+  service: string;
+  title: string;
+  narrative: string;
+};
+
+export async function getScenarios(): Promise<{ scenarios: Scenario[] }> {
+  const res = await fetch(`${BASE}/scenarios`, { cache: "no-store" });
+  if (!res.ok) throw new Error("failed to load scenarios");
+  return res.json();
+}
+
+export async function injectScenario(scenarioId: string) {
+  const res = await fetch(`${BASE}/inject-scenario?scenario_id=${encodeURIComponent(scenarioId)}`, { method: "POST" });
+  if (!res.ok) throw new Error("failed to inject scenario");
+  return res.json();
+}
+
