@@ -10,3 +10,10 @@ def rollback_service(service: str) -> dict:
     resp = requests.post(f"{GENERATOR_URL}/clear-failure", params={"service": service}, timeout=10)
     resp.raise_for_status()
     return {"status": "rolled back", "service": service, "http_status": resp.status_code}
+
+
+def restart_service(service: str) -> dict:
+    """Restarts workers and clears the active failure in the demo generator."""
+    resp = requests.post(f"{GENERATOR_URL}/restart", params={"service": service}, timeout=10)
+    resp.raise_for_status()
+    return {"status": "restarted", "service": service, "http_status": resp.status_code}

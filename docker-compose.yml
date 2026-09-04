@@ -1,0 +1,23 @@
+services:
+  generator:
+    build: ./generator
+    ports: ["9000:9000"]
+    env_file: .env
+
+  mcp-grafana:
+    image: grafana/mcp-grafana:latest
+    ports: ["8000:8000"]
+    env_file: .env
+    profiles: ["grafana"]
+
+  backend:
+    build: ./backend
+    ports: ["8080:8080"]
+    env_file: .env
+    depends_on: [generator]
+
+  frontend:
+    build: ./frontend
+    ports: ["3000:3000"]
+    env_file: .env
+    depends_on: [backend]

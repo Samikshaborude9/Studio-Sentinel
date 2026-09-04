@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 
 class RemediationOption(BaseModel):
+    action_id: Literal["rollback_service", "restart_service"]
     action: str
     risk_level: Literal["low", "medium", "high"]
     expected_recovery_min: int
