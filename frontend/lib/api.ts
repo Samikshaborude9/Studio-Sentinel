@@ -123,3 +123,36 @@ export async function injectScenario(scenarioId: string) {
   return res.json();
 }
 
+export type Shot = {
+  id: string;
+  project: string;
+  aspect_ratio: string;
+  director: string;
+  service: "render" | "transcode" | "ingest" | "distribution" | string;
+  stage_label: string;
+  sequence: string;
+  resolution: string;
+  compute_node: string;
+  fps: number;
+  total_frames: number;
+  completed_frames: number;
+  progress_pct: number;
+  status: "COMPLETED" | "IN_PROGRESS" | "QUEUED" | "FAILED";
+  error_message?: string | null;
+  timestamp: string;
+  vram_allocated_gb?: number | null;
+  preview_url?: string;
+  video_url?: string;
+};
+
+export async function getShots(): Promise<Shot[]> {
+  try {
+    const res = await fetch(`${BASE}/shots`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.shots || [];
+  } catch {
+    return [];
+  }
+}
+

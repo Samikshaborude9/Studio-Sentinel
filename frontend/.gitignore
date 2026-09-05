@@ -2,3 +2,9 @@ node_modules
 .next
 out
 .env
+.env.*
+.env*.local
+.envs
+.envs/
+!.env.example
+.DS_Store
