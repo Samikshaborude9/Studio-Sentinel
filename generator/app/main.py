@@ -26,7 +26,7 @@ async def _tick_loop():
             record_sample(sample)
             push_log(svc.name, sample["log_line"])
             emit_span(svc.name, sample["latency_p95_ms"], error=sample["error_rate_pct"] > 5)
-        await asyncio.sleep(5)
+        await asyncio.sleep(2)
 
 
 @app.on_event("startup")

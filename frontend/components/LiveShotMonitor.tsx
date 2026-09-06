@@ -36,43 +36,43 @@ export default function LiveShotMonitor({ shots, onInspectService }: LiveShotMon
           <div className="flex items-center gap-2 mb-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-signal animate-pulse shadow-[0_0_8px_#FF6A2B]" />
             <h2 className="font-mono text-sm uppercase tracking-[0.2em] text-ink font-bold">
-              GENERATOR SHOT FEED &amp; DAILIES SCREENING ROOM
+              PIPELINE LIVE STAGES &amp; DAILIES SCREENING
             </h2>
-            <span className="font-mono text-[10px] uppercase px-2 py-0.5 rounded bg-board border border-panelLine text-inkDim">
-              Real-Time Video Stream
+            <span className="font-mono text-[10px] uppercase px-2 py-0.5 rounded bg-signal/15 border border-signal/30 text-signal font-semibold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-signal animate-ping" />
+              Real-Time Feed
             </span>
           </div>
           <p className="text-xs text-inkDim max-w-xl">
-            Live digital cinema shots, 8K VFX composites, camera dailies, and DCP theatrical reels generated
-            by the pipeline. Click any shot to screen the live video playback and inspect frame telemetry.
+            Live digital cinema stages: Ingest, Transcoding, 8K VFX Render Farm, and Worldwide DCP Theatrical. Hover for instant video preview; click to screen full dailies with camera HUD and audio.
           </p>
         </div>
 
-        {/* Live Counters */}
+        {/* Live Stage Counters */}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2 bg-board/80 border border-panelLine px-3 py-1.5 rounded-md">
-            <span className="w-2 h-2 rounded-full bg-signal animate-ping" />
+            <span className="w-2 h-2 rounded-full bg-signal animate-pulse" />
             <span className="font-mono text-xs text-ink font-semibold">{activeCount}</span>
-            <span className="font-mono text-[10px] text-inkDim uppercase">Rendering</span>
+            <span className="font-mono text-[10px] text-inkDim uppercase">Active</span>
           </div>
 
           <div className="flex items-center gap-2 bg-board/80 border border-panelLine px-3 py-1.5 rounded-md">
             <span className="w-2 h-2 rounded-full bg-ok" />
             <span className="font-mono text-xs text-ink font-semibold">{completedCount}</span>
-            <span className="font-mono text-[10px] text-inkDim uppercase">Complete</span>
+            <span className="font-mono text-[10px] text-inkDim uppercase">Passed</span>
           </div>
 
           {failedCount > 0 ? (
             <div className="flex items-center gap-2 bg-crit/15 border border-crit/40 px-3 py-1.5 rounded-md animate-pulse">
               <span className="w-2 h-2 rounded-full bg-crit" />
               <span className="font-mono text-xs text-crit font-bold">{failedCount}</span>
-              <span className="font-mono text-[10px] text-crit font-semibold uppercase">Failed</span>
+              <span className="font-mono text-[10px] text-crit font-semibold uppercase">Anomaly</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 bg-board/80 border border-panelLine px-3 py-1.5 rounded-md">
               <span className="w-2 h-2 rounded-full bg-inkDim/40" />
               <span className="font-mono text-xs text-inkDim">0</span>
-              <span className="font-mono text-[10px] text-inkDim uppercase">Failed</span>
+              <span className="font-mono text-[10px] text-inkDim uppercase">Anomaly</span>
             </div>
           )}
         </div>
@@ -82,13 +82,13 @@ export default function LiveShotMonitor({ shots, onInspectService }: LiveShotMon
       <div className="flex flex-wrap items-center justify-between gap-3 py-4 border-b border-panelLine/60 text-xs">
         {/* Stage Filter */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="font-mono text-[11px] text-inkDim mr-1 uppercase">Stage:</span>
+          <span className="font-mono text-[11px] text-inkDim mr-1 uppercase">Filter:</span>
           {[
-            { id: "all", label: "All Stages" },
-            { id: "render", label: "VFX Render Farm" },
+            { id: "all", label: "All 4 Stages" },
             { id: "ingest", label: "RAW Ingest" },
             { id: "transcode", label: "ACES Transcode" },
-            { id: "distribution", label: "DCP Mastering" },
+            { id: "render", label: "VFX Render Farm" },
+            { id: "distribution", label: "DCP Theatrical" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -132,7 +132,7 @@ export default function LiveShotMonitor({ shots, onInspectService }: LiveShotMon
               }`}
               title="Card Grid View"
             >
-              Cinema Cards
+              Stage Cards
             </button>
             <button
               onClick={() => setViewMode("table")}
@@ -152,169 +152,18 @@ export default function LiveShotMonitor({ shots, onInspectService }: LiveShotMon
       {/* Main Content Area */}
       {filteredShots.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="font-mono text-sm text-inkDim">No shots match the current filter criteria.</p>
+          <p className="font-mono text-sm text-inkDim">No stage shots match the current filter criteria.</p>
         </div>
       ) : viewMode === "cards" ? (
-        /* Card Grid View with Real Cinema Frames */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-5">
-          {filteredShots.map((shot) => {
-            const isFailed = shot.status === "FAILED";
-            const isCompleted = shot.status === "COMPLETED";
-            const isInProgress = shot.status === "IN_PROGRESS";
-
-            const borderClass = isFailed
-              ? "border-crit/70 bg-crit/5 shadow-[0_0_20px_rgba(255,77,77,0.18)]"
-              : isCompleted
-              ? "border-ok/30 bg-board/50 hover:border-ok/60"
-              : isInProgress
-              ? "border-signal/40 bg-board/70 hover:border-signal shadow-[0_0_15px_rgba(255,106,43,0.12)]"
-              : "border-panelLine bg-board/40";
-
-            return (
-              <div
-                key={shot.id}
-                onClick={() => setActiveScreeningShot(shot)}
-                className={`border rounded-lg overflow-hidden transition-all duration-200 flex flex-col justify-between cursor-pointer group hover:scale-[1.01] ${borderClass}`}
-              >
-                {/* Cinema Visual Video / Frame Preview */}
-                <div className="relative aspect-video w-full bg-board overflow-hidden border-b border-panelLine">
-                  <img
-                    src={shot.preview_url || "/shots/dune.jpg"}
-                    alt={shot.sequence}
-                    className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
-                      isFailed ? "filter contrast-125 saturate-50 hue-rotate-15" : ""
-                    }`}
-                  />
-
-                  {/* Cinema 2.39:1 Letterbox Bar Accents */}
-                  <div className="absolute top-0 left-0 right-0 h-2 bg-board/80 pointer-events-none" />
-                  <div className="absolute bottom-0 left-0 right-0 h-2 bg-board/80 pointer-events-none" />
-
-                  {/* Top Overlay: Watermark & REC badge */}
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-[10px] font-mono pointer-events-none">
-                    <span className="bg-board/90 backdrop-blur-md px-2 py-0.5 rounded text-ink border border-panelLine font-bold flex items-center gap-1.5">
-                      {isFailed ? (
-                        <span className="w-1.5 h-1.5 rounded-full bg-crit animate-ping" />
-                      ) : isInProgress ? (
-                        <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse" />
-                      ) : (
-                        <span className="w-1.5 h-1.5 rounded-full bg-ok" />
-                      )}
-                      {shot.id}
-                    </span>
-
-                    <span
-                      className={`font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-bold border backdrop-blur-md ${
-                        isFailed
-                          ? "bg-crit/80 text-white border-crit animate-pulse"
-                          : isCompleted
-                          ? "bg-ok/80 text-board border-ok"
-                          : isInProgress
-                          ? "bg-signal/90 text-board border-signal"
-                          : "bg-board/80 text-inkDim border-panelLine"
-                      }`}
-                    >
-                      {shot.status}
-                    </span>
-                  </div>
-
-                  {/* Play Video / Screen Dailies Hover Action */}
-                  <div className="absolute inset-0 bg-board/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
-                    <div className="w-11 h-11 rounded-full bg-signal text-board flex items-center justify-center shadow-lg shadow-signal/40 group-hover:scale-110 transition-transform">
-                      <svg className="w-5 h-5 translate-x-0.5 fill-current" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    </div>
-                    <span className="font-mono text-[11px] uppercase tracking-widest text-ink font-bold bg-board/90 px-3 py-1 rounded border border-panelLine">
-                      Screen Dailies &amp; Video
-                    </span>
-                  </div>
-
-                  {/* Failed Anomaly Scanline Overlay */}
-                  {isFailed && (
-                    <div className="absolute inset-0 pointer-events-none bg-crit/15 flex flex-col justify-end p-2.5">
-                      <div className="bg-board/95 border border-crit/60 p-2 rounded text-[10px] font-mono text-crit">
-                        <div className="font-bold flex items-center gap-1">
-                          <span>⚠ ANOMALY:</span>
-                          <span className="truncate">{shot.service.toUpperCase()} INCIDENT</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Bottom Bar on Image: Resolution & FPS */}
-                  <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-[9px] font-mono text-ink/90 bg-board/75 backdrop-blur-md px-2 py-0.5 rounded border border-panelLine/60 pointer-events-none">
-                    <span>{shot.resolution}</span>
-                    <span>{shot.fps} FPS</span>
-                  </div>
-                </div>
-
-                {/* Card Body */}
-                <div className="p-4 flex-1 flex flex-col justify-between">
-                  <div>
-                    <div className="mb-2">
-                      <span className="font-mono text-[10px] tracking-widest text-signal font-bold uppercase block">
-                        {shot.project}
-                      </span>
-                      <h3 className="font-mono text-xs font-bold text-ink tracking-tight truncate">
-                        {shot.sequence}
-                      </h3>
-                      <p className="text-[10px] text-inkDim font-mono mt-0.5">
-                        Dir. {shot.director} • {shot.aspect_ratio}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-[10px] text-inkDim font-mono mb-3">
-                      <span className="bg-panel px-2 py-0.5 rounded border border-panelLine text-ink">
-                        {shot.stage_label}
-                      </span>
-                    </div>
-
-                    {/* Failure Detail */}
-                    {isFailed && (
-                      <div className="mb-3 p-2 rounded bg-crit/10 border border-crit/30 font-mono text-[10px] text-crit leading-snug">
-                        {shot.error_message}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Frame Progress Bar & Node */}
-                  <div className="pt-2 border-t border-panelLine/60 space-y-1.5">
-                    <div className="flex justify-between items-center font-mono text-[10px]">
-                      <span className="text-inkDim">
-                        {shot.completed_frames} / {shot.total_frames} frames
-                      </span>
-                      <span
-                        className={`font-bold ${
-                          isFailed ? "text-crit" : isCompleted ? "text-ok" : "text-signal"
-                        }`}
-                      >
-                        {shot.progress_pct}%
-                      </span>
-                    </div>
-
-                    <div className="w-full h-1.5 bg-board rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isFailed
-                            ? "bg-crit"
-                            : isCompleted
-                            ? "bg-ok"
-                            : "bg-signal shadow-[0_0_8px_#FF6A2B]"
-                        }`}
-                        style={{ width: `${Math.min(100, Math.max(0, shot.progress_pct))}%` }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between font-mono text-[9px] text-inkDim pt-0.5">
-                      <span className="truncate">Node: {shot.compute_node}</span>
-                      <span>{shot.timestamp}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        /* Reduced 4-Stage Grid with Dedicated Videos & Hover Preview */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-5">
+          {filteredShots.map((shot) => (
+            <StageShotCard
+              key={shot.id}
+              shot={shot}
+              onSelect={() => setActiveScreeningShot(shot)}
+            />
+          ))}
         </div>
       ) : (
         /* Telemetry Table View */
@@ -380,7 +229,7 @@ export default function LiveShotMonitor({ shots, onInspectService }: LiveShotMon
                       <div className="flex items-center gap-2">
                         <div className="w-16 h-1.5 bg-board rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${
+                            className={`h-full rounded-full transition-all duration-700 ${
                               isFailed ? "bg-crit" : isCompleted ? "bg-ok" : "bg-signal"
                             }`}
                             style={{ width: `${shot.progress_pct}%` }}
@@ -423,6 +272,201 @@ export default function LiveShotMonitor({ shots, onInspectService }: LiveShotMon
         />
       )}
     </section>
+  );
+}
+
+interface StageShotCardProps {
+  shot: Shot;
+  onSelect: () => void;
+}
+
+function StageShotCard({ shot, onSelect }: StageShotCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const hoverVideoRef = useRef<HTMLVideoElement>(null);
+
+  const isFailed = shot.status === "FAILED";
+  const isCompleted = shot.status === "COMPLETED";
+  const isInProgress = shot.status === "IN_PROGRESS";
+
+  const borderClass = isFailed
+    ? "border-crit/70 bg-crit/5 shadow-[0_0_20px_rgba(255,77,77,0.18)]"
+    : isCompleted
+    ? "border-ok/30 bg-board/50 hover:border-ok/60"
+    : isInProgress
+    ? "border-signal/40 bg-board/70 hover:border-signal shadow-[0_0_15px_rgba(255,106,43,0.12)]"
+    : "border-panelLine bg-board/40";
+
+  // Control video preview playback on card hover
+  useEffect(() => {
+    if (!hoverVideoRef.current) return;
+    if (isHovered) {
+      hoverVideoRef.current.currentTime = 0;
+      hoverVideoRef.current.play().catch(() => {});
+    } else {
+      hoverVideoRef.current.pause();
+    }
+  }, [isHovered]);
+
+  return (
+    <div
+      onClick={onSelect}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`border rounded-lg overflow-hidden transition-all duration-200 flex flex-col justify-between cursor-pointer group hover:scale-[1.015] ${borderClass}`}
+    >
+      {/* Cinema Visual Video / Frame Preview */}
+      <div className="relative aspect-video w-full bg-board overflow-hidden border-b border-panelLine">
+        {/* Still image poster */}
+        <img
+          src={shot.preview_url || "/shots/dune.jpg"}
+          alt={shot.sequence}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${
+            isHovered ? "opacity-0" : "opacity-100"
+          } ${isFailed ? "filter contrast-125 saturate-50 hue-rotate-15" : ""}`}
+        />
+
+        {/* Live Hover Video Player with unique video for this stage */}
+        {shot.video_url && (
+          <video
+            ref={hoverVideoRef}
+            src={shot.video_url}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+              isHovered ? "opacity-100" : "opacity-0"
+            } ${isFailed ? "filter contrast-150 saturate-50 hue-rotate-15" : ""}`}
+          />
+        )}
+
+        {/* Cinema 2.39:1 Letterbox Bar Accents */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-board/80 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-2 bg-board/80 pointer-events-none" />
+
+        {/* Top Overlay: Watermark & REC badge */}
+        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between text-[10px] font-mono pointer-events-none">
+          <span className="bg-board/90 backdrop-blur-md px-2 py-0.5 rounded text-ink border border-panelLine font-bold flex items-center gap-1.5 text-[10px]">
+            {isFailed ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-crit animate-ping" />
+            ) : isInProgress ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse" />
+            ) : (
+              <span className="w-1.5 h-1.5 rounded-full bg-ok" />
+            )}
+            {shot.id}
+          </span>
+
+          <span
+            className={`font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-bold border backdrop-blur-md ${
+              isFailed
+                ? "bg-crit/80 text-white border-crit animate-pulse"
+                : isCompleted
+                ? "bg-ok/80 text-board border-ok"
+                : isInProgress
+                ? "bg-signal/90 text-board border-signal"
+                : "bg-board/80 text-inkDim border-panelLine"
+            }`}
+          >
+            {shot.status}
+          </span>
+        </div>
+
+        {/* Play Video / Screen Dailies Hover Action */}
+        <div className="absolute inset-0 bg-board/30 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-1.5 pointer-events-none">
+          <div className="w-10 h-10 rounded-full bg-signal text-board flex items-center justify-center shadow-lg shadow-signal/40 group-hover:scale-110 transition-transform">
+            <svg className="w-4 h-4 translate-x-0.5 fill-current" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-ink font-bold bg-board/90 px-2 py-0.5 rounded border border-panelLine">
+            Screen Reel
+          </span>
+        </div>
+
+        {/* Failed Anomaly Scanline Overlay */}
+        {isFailed && (
+          <div className="absolute inset-0 pointer-events-none bg-crit/15 flex flex-col justify-end p-2">
+            <div className="bg-board/95 border border-crit/60 p-1.5 rounded text-[9px] font-mono text-crit">
+              <div className="font-bold flex items-center gap-1">
+                <span>⚠ ANOMALY:</span>
+                <span className="truncate">{shot.service.toUpperCase()} INCIDENT</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bottom Bar on Image: Stage Badge & FPS */}
+        <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[9px] font-mono text-ink/90 bg-board/75 backdrop-blur-md px-2 py-0.5 rounded border border-panelLine/60 pointer-events-none">
+          <span className="uppercase font-semibold text-signal">{shot.service}</span>
+          <span>{shot.fps} FPS</span>
+        </div>
+      </div>
+
+      {/* Card Body */}
+      <div className="p-3.5 flex-1 flex flex-col justify-between">
+        <div>
+          <div className="mb-2">
+            <span className="font-mono text-[10px] tracking-widest text-signal font-bold uppercase block">
+              {shot.project}
+            </span>
+            <h3 className="font-mono text-xs font-bold text-ink tracking-tight truncate">
+              {shot.sequence}
+            </h3>
+            <p className="text-[10px] text-inkDim font-mono mt-0.5 truncate">
+              Dir. {shot.director} • {shot.aspect_ratio}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 text-[10px] text-inkDim font-mono mb-2.5">
+            <span className="bg-panel px-2 py-0.5 rounded border border-panelLine text-ink truncate text-[10px]">
+              {shot.stage_label}
+            </span>
+          </div>
+
+          {/* Failure Detail */}
+          {isFailed && (
+            <div className="mb-2.5 p-2 rounded bg-crit/10 border border-crit/30 font-mono text-[10px] text-crit leading-snug">
+              {shot.error_message}
+            </div>
+          )}
+        </div>
+
+        {/* Frame Progress Bar & Node */}
+        <div className="pt-2 border-t border-panelLine/60 space-y-1.5">
+          <div className="flex justify-between items-center font-mono text-[10px]">
+            <span className="text-inkDim">
+              {shot.completed_frames} / {shot.total_frames} frames
+            </span>
+            <span
+              className={`font-bold ${
+                isFailed ? "text-crit" : isCompleted ? "text-ok" : "text-signal"
+              }`}
+            >
+              {shot.progress_pct}%
+            </span>
+          </div>
+
+          <div className="w-full h-1.5 bg-board rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ease-out ${
+                isFailed
+                  ? "bg-crit"
+                  : isCompleted
+                  ? "bg-ok"
+                  : "bg-signal shadow-[0_0_8px_#FF6A2B]"
+              }`}
+              style={{ width: `${Math.min(100, Math.max(0, shot.progress_pct))}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between font-mono text-[9px] text-inkDim pt-0.5">
+            <span className="truncate">Node: {shot.compute_node}</span>
+            <span>{shot.timestamp}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -499,7 +543,7 @@ function ScreeningRoomModal({ shot, onClose, onInspectService }: ScreeningModalP
           {/* HTML5 Video Player */}
           <video
             ref={videoRef}
-            src={shot.video_url || "/videos/reel_sample.mp4"}
+            src={shot.video_url || "/videos/vfx_render.mp4"}
             poster={shot.preview_url || "/shots/dune.jpg"}
             autoPlay
             loop
@@ -519,15 +563,15 @@ function ScreeningRoomModal({ shot, onClose, onInspectService }: ScreeningModalP
             <div className="space-y-0.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded border border-white/10">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-crit animate-pulse" />
-                <span className="text-white font-bold">● REC 24.000 FPS</span>
+                <span className="text-white font-bold">● REC {shot.fps || 24}.000 FPS</span>
               </div>
               <div className="text-[10px] text-white/70">
-                TC 01:24:18:{String(currentFrame % 24).padStart(2, "0")}
+                TC 01:24:18:{String(currentFrame % (shot.fps || 24)).padStart(2, "0")}
               </div>
             </div>
 
             <div className="text-right bg-black/60 backdrop-blur-md px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/80 space-y-0.5">
-              <div>ARRI ALEXA 35 • {shot.resolution}</div>
+              <div>STAGE: {shot.service.toUpperCase()} • {shot.resolution}</div>
               <div className="text-signal font-semibold">ACES 1.3 cg • {shot.aspect_ratio}</div>
             </div>
           </div>

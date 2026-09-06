@@ -40,7 +40,7 @@ export default function Dashboard() {
       }
     }
     poll();
-    const t = setInterval(poll, 2500);
+    const t = setInterval(poll, 1200);
     return () => {
       alive = false;
       clearInterval(t);

@@ -1,128 +1,72 @@
-"""Live Hollywood Studio Shot Generator:
-Simulates cinema VFX shots, dailies camera reels, transcode passes, and DCP distribution
-packages flowing through the Studio Sentinel pipeline in real time.
+"""Live Hollywood Studio Shot Pipeline:
+Simulates cinema VFX shots, camera dailies, transcode passes, and DCP packages
+flowing through the 4 Studio Sentinel pipeline stages in real time.
 """
 import random
-import time
 from datetime import datetime
 
-PROJECTS = [
-    {
-        "name": "DUNE: PART THREE",
+STAGE_CONFIGS = {
+    "ingest": {
+        "service": "ingest",
+        "stage_label": "ARRI RAW Sensor Dailies Ingest",
+        "project": "DUNE: PART THREE",
         "prefix": "DUNE",
-        "aspect": "2.39:1 Scope",
+        "aspect_ratio": "2.39:1 Scope",
         "director": "D. Villeneuve",
-        "preview_url": "/shots/dune.jpg",
-        "video_url": "/videos/reel_sample.mp4",
-    },
-    {
-        "name": "AVATAR: FIRE & ASH",
-        "prefix": "AVTR",
-        "aspect": "1.85:1 IMAX",
-        "director": "J. Cameron",
-        "preview_url": "/shots/avatar.jpg",
-        "video_url": "/videos/reel_sample.mp4",
-    },
-    {
-        "name": "BLADE RUNNER 2099",
-        "prefix": "BR99",
-        "aspect": "2.40:1 Anamorphic",
-        "director": "J. Phelan",
-        "preview_url": "/shots/bladerunner.jpg",
-        "video_url": "/videos/reel_sample.mp4",
-    },
-    {
-        "name": "TRON: ARES",
-        "prefix": "TRON",
-        "aspect": "2.20:1 70mm",
-        "director": "J. Kosinski",
-        "preview_url": "/shots/tron.jpg",
-        "video_url": "/videos/reel_sample.mp4",
-    },
-    {
-        "name": "ODYSSEY: ZERO",
-        "prefix": "ODYS",
-        "aspect": "2.39:1 Scope",
-        "director": "C. Nolan",
-        "preview_url": "/shots/dune.jpg",
-        "video_url": "/videos/reel_sample.mp4",
-    },
-]
-
-SHOT_TEMPLATES = [
-    {
-        "service": "render",
-        "stage_label": "8K VFX Multi-Pass Comp",
-        "seq": "SEQ-04 [Ornithopter Canyon Ambush]",
-        "res": "8K OpenEXR 16-bit ACEScg",
-        "node": "GPU-H100-NODE-03",
+        "sequence": "REEL-A088 [Ornithopter Canyon Exterior]",
+        "resolution": "6.5K ARRI RAW Sensor Uncompressed",
+        "compute_node": "INGEST-FIBRE-SAN-01",
         "fps": 24,
         "frames": 240,
+        "preview_url": "/shots/dune.jpg",
+        "video_url": "/videos/camera_dailies.mp4",
     },
-    {
-        "service": "render",
-        "stage_label": "Volumetric Lighting & NeRF Pass",
-        "seq": "SEQ-12 [Bioluminescent Oceanic Trench]",
-        "res": "8K Stereo OpenEXR",
-        "node": "GPU-H100-NODE-08",
-        "fps": 48,
-        "frames": 360,
-    },
-    {
+    "transcode": {
         "service": "transcode",
-        "stage_label": "ProRes 4444 XQ Editorial Proxy",
-        "seq": "SEQ-08 [Neon Corridor Pursuit]",
-        "res": "4K ProRes 4444 XQ Rec.709",
-        "node": "ENCODER-NODE-02",
+        "stage_label": "ACES Color Gamut Grading & Proxy",
+        "project": "BLADE RUNNER 2099",
+        "prefix": "BR99",
+        "aspect_ratio": "2.40:1 Anamorphic",
+        "director": "J. Phelan",
+        "sequence": "SEQ-08 [Neon Corridor Pursuit]",
+        "resolution": "4K ProRes 4444 XQ ACEScg",
+        "compute_node": "COLOR-PIPE-NODE-02",
         "fps": 24,
-        "frames": 480,
+        "frames": 360,
+        "preview_url": "/shots/bladerunner.jpg",
+        "video_url": "/videos/vfx_render.mp4",
     },
-    {
-        "service": "ingest",
-        "stage_label": "ARRI RAW Dailies Checksum & Ingest",
-        "seq": "REEL-A088 [Main Stage Night Exterior]",
-        "res": "6.5K ARRI RAW Sensor Uncompressed",
-        "node": "INGEST-FIBRE-SAN-01",
-        "fps": 24,
-        "frames": 720,
+    "render": {
+        "service": "render",
+        "stage_label": "8K VFX Multi-Pass 3D Comp",
+        "project": "AVATAR: FIRE & ASH",
+        "prefix": "AVTR",
+        "aspect_ratio": "1.85:1 IMAX",
+        "director": "J. Cameron",
+        "sequence": "SEQ-14 [Volcanic Caldera Simulation]",
+        "resolution": "8K OpenEXR 16-bit ACEScg",
+        "compute_node": "GPU-H100-NODE-03",
+        "fps": 48,
+        "frames": 280,
+        "preview_url": "/shots/avatar.jpg",
+        "video_url": "/videos/vfx_render.mp4",
     },
-    {
+    "distribution": {
         "service": "distribution",
         "stage_label": "DCI Master DCP Theatrical Package",
-        "seq": "DCP-CHUNK-09 [Dolby Vision Atmos Master]",
-        "res": "4K DCI Container 250Mbps JPEG2000",
-        "node": "EDGE-CDN-REGION-USW",
+        "project": "TRON: ARES",
+        "prefix": "TRON",
+        "aspect_ratio": "2.20:1 70mm",
+        "director": "J. Kosinski",
+        "sequence": "DCP-CHUNK-09 [Dolby Vision Atmos Master]",
+        "resolution": "4K DCI Container 250Mbps JPEG2000",
+        "compute_node": "EDGE-CDN-REGION-USW",
         "fps": 24,
-        "frames": 500,
+        "frames": 400,
+        "preview_url": "/shots/tron.jpg",
+        "video_url": "/videos/dcp_distribution.mp4",
     },
-    {
-        "service": "render",
-        "stage_label": "Crowd Simulation & Cloth FX",
-        "seq": "SEQ-02 [Imperial Arena Entrance]",
-        "res": "8K OpenEXR ACEScg",
-        "node": "GPU-A100-NODE-12",
-        "fps": 24,
-        "frames": 180,
-    },
-    {
-        "service": "transcode",
-        "stage_label": "ACES Color Gamut Grading Cache",
-        "seq": "SEQ-05 [Sunken Citadel Chamber]",
-        "res": "4K ACESproxy 10-bit",
-        "node": "COLOR-PIPE-NODE-01",
-        "fps": 24,
-        "frames": 320,
-    },
-    {
-        "service": "ingest",
-        "stage_label": "High-Speed Phantom Flex 4K High-Speed",
-        "seq": "REEL-C012 [Pyrotechnic Explosion 1000fps]",
-        "res": "4K CineRAW 1000 FPS High-Speed",
-        "node": "INGEST-FIBRE-SAN-03",
-        "fps": 1000,
-        "frames": 1200,
-    },
-]
+}
 
 FAILURE_ERRORS = {
     "render": "CUDA out of memory (2.14 GiB allocation failed on Device:0, worker OOM-killed)",
@@ -136,52 +80,45 @@ class ShotManager:
         self.shots = []
         self._init_shots()
 
-    def _generate_shot(self, force_service=None, force_status="IN_PROGRESS"):
-        tpl = random.choice([t for t in SHOT_TEMPLATES if force_service is None or t["service"] == force_service])
-        proj = random.choice(PROJECTS)
-        shot_num = random.randint(100, 999)
-        shot_id = f"{proj['prefix']}-{shot_num}"
-        
-        total_frames = tpl["frames"]
-        if force_status == "COMPLETED":
-            completed = total_frames
-        elif force_status == "QUEUED":
-            completed = 0
-        else:
-            completed = random.randint(int(total_frames * 0.15), int(total_frames * 0.85))
-
+    def _create_stage_shot(self, service: str, take_num: int = 1):
+        cfg = STAGE_CONFIGS[service]
+        shot_id = f"{cfg['prefix']}-{random.randint(100, 999)}"
+        total_frames = cfg["frames"]
+        # Start with a realistic initial completion percentage
+        completed = random.randint(int(total_frames * 0.2), int(total_frames * 0.7))
         pct = round((completed / total_frames) * 100, 1)
+
+        seq_title = cfg["sequence"]
+        if take_num > 1:
+            seq_title = f"{seq_title} [TK-{take_num:02d}]"
 
         return {
             "id": shot_id,
-            "project": proj["name"],
-            "aspect_ratio": proj["aspect"],
-            "director": proj["director"],
-            "service": tpl["service"],
-            "stage_label": tpl["stage_label"],
-            "sequence": tpl["seq"],
-            "resolution": tpl["res"],
-            "compute_node": tpl["node"],
-            "fps": tpl["fps"],
+            "project": cfg["project"],
+            "aspect_ratio": cfg["aspect_ratio"],
+            "director": cfg["director"],
+            "service": service,
+            "stage_label": cfg["stage_label"],
+            "sequence": seq_title,
+            "resolution": cfg["resolution"],
+            "compute_node": cfg["compute_node"],
+            "fps": cfg["fps"],
             "total_frames": total_frames,
             "completed_frames": completed,
             "progress_pct": pct,
-            "status": force_status,
+            "status": "IN_PROGRESS",
             "error_message": None,
             "timestamp": datetime.utcnow().strftime("%H:%M:%S UTC"),
-            "vram_allocated_gb": round(random.uniform(14.2, 21.8), 1) if tpl["service"] == "render" else None,
-            "preview_url": proj.get("preview_url", "/shots/dune.jpg"),
-            "video_url": proj.get("video_url", "/videos/reel_sample.mp4"),
+            "vram_allocated_gb": round(random.uniform(14.2, 21.8), 1) if service == "render" else None,
+            "preview_url": cfg["preview_url"],
+            "video_url": cfg["video_url"],
+            "take_num": take_num,
         }
 
     def _init_shots(self):
-        # Seed initial pool of diverse shots
-        for _ in range(4):
-            self.shots.append(self._generate_shot(force_status="COMPLETED"))
-        for s in ["render", "transcode", "ingest", "distribution"]:
-            self.shots.append(self._generate_shot(force_service=s, force_status="IN_PROGRESS"))
-        for _ in range(2):
-            self.shots.append(self._generate_shot(force_status="QUEUED"))
+        # Initialize exactly 1 active shot per pipeline stage for focused real-time monitoring
+        for svc in ["ingest", "transcode", "render", "distribution"]:
+            self.shots.append(self._create_stage_shot(svc, take_num=1))
 
     def tick(self, failing_services: set[str]):
         """Advance frames for in-progress shots, trigger failures if matching service is failing."""
@@ -189,8 +126,7 @@ class ShotManager:
             svc = shot["service"]
 
             if svc in failing_services:
-                # Failing service turns active shots to FAILED
-                if shot["status"] in ("IN_PROGRESS", "QUEUED"):
+                if shot["status"] != "FAILED":
                     shot["status"] = "FAILED"
                     shot["error_message"] = FAILURE_ERRORS.get(svc, f"Service {svc} incident active")
                     shot["timestamp"] = datetime.utcnow().strftime("%H:%M:%S UTC")
@@ -203,8 +139,8 @@ class ShotManager:
                 shot["timestamp"] = datetime.utcnow().strftime("%H:%M:%S UTC")
 
             if shot["status"] == "IN_PROGRESS":
-                # Advance frames
-                speed = random.randint(15, 40)
+                # Advance frames smoothly in real time
+                speed = random.randint(10, 24)
                 shot["completed_frames"] = min(shot["total_frames"], shot["completed_frames"] + speed)
                 shot["progress_pct"] = round((shot["completed_frames"] / shot["total_frames"]) * 100, 1)
                 shot["timestamp"] = datetime.utcnow().strftime("%H:%M:%S UTC")
@@ -212,24 +148,17 @@ class ShotManager:
                 if shot["completed_frames"] >= shot["total_frames"]:
                     shot["status"] = "COMPLETED"
 
-            elif shot["status"] == "QUEUED":
-                # Chance to start
-                if random.random() < 0.4:
-                    shot["status"] = "IN_PROGRESS"
-                    shot["timestamp"] = datetime.utcnow().strftime("%H:%M:%S UTC")
-
-        # If too many completed, introduce new queued/in-progress shots
-        active_count = sum(1 for s in self.shots if s["status"] in ("IN_PROGRESS", "QUEUED", "FAILED"))
-        if active_count < 5:
-            new_shot = self._generate_shot(force_status="IN_PROGRESS")
-            self.shots.insert(0, new_shot)
-
-        # Keep rolling history limited to 15 shots
-        self.shots = self.shots[:15]
+            elif shot["status"] == "COMPLETED":
+                # After completing, cycle to a new take or next sequence in real time
+                new_take = shot.get("take_num", 1) + 1
+                new_shot = self._create_stage_shot(svc, take_num=new_take)
+                new_shot["completed_frames"] = 0
+                new_shot["progress_pct"] = 0.0
+                idx = self.shots.index(shot)
+                self.shots[idx] = new_shot
 
     def get_all(self):
         return list(self.shots)
-
 
 # Global singleton manager
 SHOT_MANAGER = ShotManager()
