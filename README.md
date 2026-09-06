@@ -119,13 +119,6 @@ To connect Studio Sentinel to live Grafana Cloud and Gemini Enterprise:
 
 ---
 
-## Submission Artifacts
-
-- 📋 [Devpost Submission Documentation](docs/devpost-submission.md)
-- 🎬 [3-Minute Video Demo Script](docs/demo-video-script.md)
-- 📐 [Detailed Architecture Specifications](docs/architecture.md)
-- 🗄️ [Database Schema Documentation](DBSchema.md)
-
 ---
 
 ## License
