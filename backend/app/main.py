@@ -32,6 +32,17 @@ def productions():
     return resp.json()
 
 
+@app.get("/shots")
+def shots():
+    """Live Hollywood studio shot pipeline — proxies the generator's /shots."""
+    try:
+        resp = requests.get(f"{GENERATOR_URL}/shots", timeout=10)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as exc:
+        return {"shots": [], "error": str(exc)}
+
+
 @app.post("/productions/{service}/inject-failure")
 def trigger_failure(service: str):
     resp = requests.post(f"{GENERATOR_URL}/inject-failure", params={"service": service}, timeout=10)
