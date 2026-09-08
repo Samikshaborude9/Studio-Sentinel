@@ -4,17 +4,21 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   getProductions,
+  getShots,
   createIncident,
   injectScenario,
   ServiceStatus,
   Scenario,
+  Shot,
 } from "@/lib/api";
 import PipelineTopology from "@/components/PipelineTopology";
 import ScenarioPanel from "@/components/ScenarioPanel";
 import TelemetryChart from "@/components/TelemetryChart";
+import LiveShotMonitor from "@/components/LiveShotMonitor";
 
 export default function Dashboard() {
   const [statuses, setStatuses] = useState<Record<string, ServiceStatus> | null>(null);
+  const [shots, setShots] = useState<Shot[]>([]);
   const [selectedService, setSelectedService] = useState<string>("render");
   const [busy, setBusy] = useState(false);
   const router = useRouter();
@@ -23,8 +27,14 @@ export default function Dashboard() {
     let alive = true;
     async function poll() {
       try {
-        const data = await getProductions();
-        if (alive) setStatuses(data);
+        const [data, shotList] = await Promise.all([
+          getProductions().catch(() => null),
+          getShots().catch(() => []),
+        ]);
+        if (alive) {
+          if (data) setStatuses(data);
+          if (shotList && shotList.length > 0) setShots(shotList);
+        }
       } catch {
         // Backend connecting
       }
@@ -101,6 +111,12 @@ export default function Dashboard() {
         statuses={statuses}
         onSelectService={(svc) => setSelectedService(svc)}
         activeService={selectedService}
+      />
+
+      {/* Live Cinema Shot Monitor & Feed (Generator Real-time Output) */}
+      <LiveShotMonitor
+        shots={shots}
+        onInspectService={(svc) => handleManualInspect(svc)}
       />
 
       {/* Scenario Injection Controller (3 Hollywood Disaster Modes) */}
