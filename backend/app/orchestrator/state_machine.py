@@ -22,7 +22,7 @@ from ..schemas.recommendation import Recommendation
 from ..schemas.report import IncidentReport
 
 
-def _build_engine():
+def _database_url_from_env() -> str:
     pooler_url = os.getenv("SUPABASE_POOLER_URL")
     database_url = pooler_url or os.getenv("DATABASE_URL", "sqlite:///./incidents.db")
     parsed_url = urlparse(database_url)
@@ -31,6 +31,11 @@ def _build_engine():
             "DATABASE_URL uses Supabase's direct IPv6 endpoint. Set SUPABASE_POOLER_URL "
             "to the Session Pooler URI from Supabase Connect (port 5432) in Render."
         )
+    return database_url
+
+
+def _build_engine():
+    database_url = _database_url_from_env()
     if database_url.startswith(("postgresql://", "postgres://")):
         database_url = "postgresql+psycopg://" + database_url.split("://", 1)[1]
     if database_url.startswith("postgresql+psycopg://") or database_url.startswith("postgres+psycopg://"):
