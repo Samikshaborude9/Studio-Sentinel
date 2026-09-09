@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .orchestrator.state_machine import init_db
 from .routes.incidents import router as incidents_router
 
-GENERATOR_URL = os.getenv("GENERATOR_URL", "http://localhost:9000")
+GENERATOR_URL = os.getenv("GENERATOR_URL", "https://studio-sentinel.onrender.com")
 
 app = FastAPI(title="Studio Sentinel — Backend")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
