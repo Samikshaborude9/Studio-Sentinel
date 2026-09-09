@@ -1,4 +1,4 @@
-const BASE = process.env.BACKEND_URL || "http://localhost:8000";
+const BASE = process.env.BACKEND_URL || "https://studio-sentinel-2.onrender.com";
 
 export type ServiceStatus = {
   service: string;
