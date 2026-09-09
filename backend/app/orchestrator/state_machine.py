@@ -22,11 +22,12 @@ from ..schemas.report import IncidentReport
 
 
 def _build_engine():
-    database_url = os.getenv("DATABASE_URL", "sqlite:///./incidents.db")
-    if database_url.startswith("postgresql://"):
-        # Use psycopg 3 driver for Supabase/Postgres connections.
-        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
-    if database_url.startswith("postgresql+psycopg://") or database_url.startswith("postgres://"):
+    database_url = os.getenv("SUPABASE_POOLER_URL") or os.getenv(
+        "DATABASE_URL", "sqlite:///./incidents.db"
+    )
+    if database_url.startswith(("postgresql://", "postgres://")):
+        database_url = "postgresql+psycopg://" + database_url.split("://", 1)[1]
+    if database_url.startswith("postgresql+psycopg://") or database_url.startswith("postgres+psycopg://"):
         return create_engine(database_url, pool_pre_ping=True)
     return create_engine(database_url, connect_args={"check_same_thread": False})
 
