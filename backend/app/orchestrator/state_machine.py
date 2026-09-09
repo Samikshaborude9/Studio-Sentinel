@@ -26,9 +26,9 @@ def _database_url_from_env() -> str:
     pooler_url = os.getenv("SUPABASE_POOLER_URL")
     database_url = pooler_url or os.getenv("DATABASE_URL", "sqlite:///./incidents.db")
     parsed_url = urlparse(database_url)
-    if not pooler_url and parsed_url.hostname and parsed_url.hostname.endswith(".supabase.co"):
+    if parsed_url.hostname and parsed_url.hostname.startswith("db.") and parsed_url.hostname.endswith(".supabase.co"):
         raise RuntimeError(
-            "DATABASE_URL uses Supabase's direct IPv6 endpoint. Set SUPABASE_POOLER_URL "
+            "Supabase URL uses the direct IPv6 endpoint. Set SUPABASE_POOLER_URL "
             "to the Session Pooler URI from Supabase Connect (port 5432) in Render."
         )
     return database_url
