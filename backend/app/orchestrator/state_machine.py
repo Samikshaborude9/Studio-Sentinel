@@ -9,6 +9,7 @@ The default remains SQLite for local development, but a Supabase/Postgres URL ca
 provided through the DATABASE_URL environment variable.
 """
 import os
+from urllib.parse import urlparse
 
 from sqlmodel import SQLModel, Session, create_engine, select
 
@@ -22,9 +23,14 @@ from ..schemas.report import IncidentReport
 
 
 def _build_engine():
-    database_url = os.getenv("SUPABASE_POOLER_URL") or os.getenv(
-        "DATABASE_URL", "sqlite:///./incidents.db"
-    )
+    pooler_url = os.getenv("SUPABASE_POOLER_URL")
+    database_url = pooler_url or os.getenv("DATABASE_URL", "sqlite:///./incidents.db")
+    parsed_url = urlparse(database_url)
+    if not pooler_url and parsed_url.hostname and parsed_url.hostname.endswith(".supabase.co"):
+        raise RuntimeError(
+            "DATABASE_URL uses Supabase's direct IPv6 endpoint. Set SUPABASE_POOLER_URL "
+            "to the Session Pooler URI from Supabase Connect (port 5432) in Render."
+        )
     if database_url.startswith(("postgresql://", "postgres://")):
         database_url = "postgresql+psycopg://" + database_url.split("://", 1)[1]
     if database_url.startswith("postgresql+psycopg://") or database_url.startswith("postgres+psycopg://"):
