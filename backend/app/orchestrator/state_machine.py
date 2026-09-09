@@ -25,7 +25,20 @@ from ..schemas.report import IncidentReport
 def _database_url_from_env() -> str:
     pooler_url = os.getenv("SUPABASE_POOLER_URL")
     database_url = pooler_url or os.getenv("DATABASE_URL", "sqlite:///./incidents.db")
+    if "\r" in database_url or "\n" in database_url:
+        raise RuntimeError(
+            "Database URL must be a single line. URL-encode special password characters "
+            "and remove any line breaks from SUPABASE_POOLER_URL."
+        )
     parsed_url = urlparse(database_url)
+    if parsed_url.scheme in {"postgres", "postgresql", "postgresql+psycopg", "postgres+psycopg"}:
+        if parsed_url.fragment:
+            raise RuntimeError(
+                "Database URL contains an unencoded '#'. URL-encode special password characters "
+                "in SUPABASE_POOLER_URL before saving it in Render."
+            )
+        if not parsed_url.hostname:
+            raise RuntimeError("Database URL has no valid hostname.")
     if parsed_url.hostname and parsed_url.hostname.startswith("db.") and parsed_url.hostname.endswith(".supabase.co"):
         raise RuntimeError(
             "Supabase URL uses the direct IPv6 endpoint. Set SUPABASE_POOLER_URL "

@@ -41,6 +41,28 @@ class DatabaseConfigurationTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "direct IPv6 endpoint"):
                 _database_url_from_env()
 
+    def test_pooler_url_rejects_embedded_line_break(self):
+        with patch.dict(
+            os.environ,
+            {
+                "SUPABASE_POOLER_URL": "postgresql://user:password\n@pooler.example.com:5432/postgres",
+                "DATABASE_URL": "sqlite:///./incidents.db",
+            },
+        ):
+            with self.assertRaisesRegex(RuntimeError, "single line"):
+                _database_url_from_env()
+
+    def test_pooler_url_rejects_unencoded_password_hash(self):
+        with patch.dict(
+            os.environ,
+            {
+                "SUPABASE_POOLER_URL": "postgresql://user:pass#word@pooler.example.com:5432/postgres",
+                "DATABASE_URL": "sqlite:///./incidents.db",
+            },
+        ):
+            with self.assertRaisesRegex(RuntimeError, "unencoded"):
+                _database_url_from_env()
+
 
 if __name__ == "__main__":
     unittest.main()
