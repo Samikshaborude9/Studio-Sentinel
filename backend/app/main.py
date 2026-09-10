@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +9,30 @@ from .routes.incidents import router as incidents_router
 
 GENERATOR_URL = os.getenv("GENERATOR_URL", "https://studio-sentinel.onrender.com")
 DEFAULT_GENERATOR_URL = "https://studio-sentinel.onrender.com"
+GENERATOR_REQUEST_ATTEMPTS = 2
+
+
+def _generator_urls() -> list[str]:
+    configured_url = GENERATOR_URL.rstrip("/")
+    urls = [configured_url]
+    if configured_url != DEFAULT_GENERATOR_URL:
+        urls.append(DEFAULT_GENERATOR_URL)
+    return urls
+
+
+def _get_generator_json(path: str) -> dict:
+    last_error = "unknown upstream error"
+    for url in _generator_urls():
+        for attempt in range(GENERATOR_REQUEST_ATTEMPTS):
+            try:
+                resp = requests.get(f"{url}{path}", timeout=15)
+                resp.raise_for_status()
+                return resp.json()
+            except (requests.RequestException, ValueError) as exc:
+                last_error = str(exc)
+                if attempt + 1 < GENERATOR_REQUEST_ATTEMPTS:
+                    time.sleep(1)
+    raise HTTPException(status_code=502, detail=f"Telemetry generator unavailable: {last_error}")
 
 app = FastAPI(title="Studio Sentinel — Backend")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -28,20 +53,7 @@ def health():
 def productions():
     """Health board data for the frontend dashboard — proxies the generator's
     /status so the frontend only ever talks to the backend."""
-    urls = [GENERATOR_URL.rstrip("/")]
-    if urls[0] != DEFAULT_GENERATOR_URL:
-        urls.append(DEFAULT_GENERATOR_URL)
-
-    last_error = "unknown upstream error"
-    for url in urls:
-        try:
-            resp = requests.get(f"{url}/status", timeout=10)
-            resp.raise_for_status()
-            return resp.json()
-        except (requests.RequestException, ValueError) as exc:
-            last_error = str(exc)
-
-    raise HTTPException(status_code=502, detail=f"Telemetry generator unavailable: {last_error}")
+    return _get_generator_json("/status")
 
 
 @app.get("/shots")
